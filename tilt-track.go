@@ -3,34 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/redis.v4"
+	"github.com/elgs/gojq"
+	"github.com/garyburd/redigo/redis"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 )
 
-type pcfDevData struct {
-	Serv []service `json:"p-redis"`
-}
-
-type pwsData struct {
-	Serv []service `json:"rediscloud"`
-}
-
-type bluemixData struct {
-	Serv []service `json:"redis-2.6"`
-}
-
-type service struct {
-	Credentials creds `json:"credentials"`
-}
-
-type creds struct {
-	Host     string `json:"host"`
-	Password string `json:"password"`
-	Port     int    `json:"port"`
-}
+var redisClient redis.Conn
 
 func check(function string, e error) {
 	if e != nil {
@@ -38,7 +19,12 @@ func check(function string, e error) {
 	}
 }
 func responseHandler(w http.ResponseWriter, r *http.Request) {
-	response := `{"Key1": "val1"}`
+	response, err := redisClient.Do("KEYS", "{lat:*")
+	m := response.(map[string]interface{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%T|%v\n", m, m)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	json.NewEncoder(w).Encode(response)
 }
@@ -56,23 +42,38 @@ func main() {
 
 	servicesJSON := os.Getenv("VCAP_SERVICES")
 	fmt.Println(servicesJSON)
-	var services pcfDevData
-	err := json.Unmarshal([]byte(servicesJSON), &services)
+	parser, err := gojq.NewStringQuery(servicesJSON)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%T: %v\n", services.Serv[0].Credentials.Host, services.Serv[0].Credentials.Host)
-	credentials := services.Serv[0].Credentials
+	serviceName := "p-redis"
+	credentials, err := parser.Query(serviceName + ".[0].credentials")
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     credentials.Host + ":" + strconv.Itoa(credentials.Port),
-		Password: credentials.Password,
-		DB:       0,
-	})
+	// Convert credentials to Go map so we can reference the values
+	m := credentials.(map[string]interface{})
+	hostKey := "host"
+	redisHost := m[hostKey].(string)
+	redisPassword := m["password"]
+	redisPort := strconv.FormatFloat(m["port"].(float64), 'f', -1, 64)
 
-	pong, err := client.Ping().Result()
+	redisClient, err = redis.Dial("tcp", redisHost+":"+redisPort)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer redisClient.Close()
+
+	_, err = redisClient.Do("AUTH", redisPassword.(string))
+	if err != nil {
+		log.Fatal(err)
+	}
+	pong, err := redisClient.Do("PING")
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println(pong, err)
+
 	http.HandleFunc("/data", responseHandler)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
