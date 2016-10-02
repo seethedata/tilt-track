@@ -20,13 +20,18 @@ func check(function string, e error) {
 }
 func responseHandler(w http.ResponseWriter, r *http.Request) {
 	response, err := redisClient.Do("KEYS", "{lat:*")
-	m := response.(map[string]interface{})
+	fmt.Printf("%T|%v\n", response, response)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%T|%v\n", m, m)
+	m := response.([]interface{})
+	var positions []string
+	if err = redis.ScanSlice(m, &positions); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(positions)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(positions)
 }
 
 func main() {
