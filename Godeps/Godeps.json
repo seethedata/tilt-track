@@ -1,0 +1,46 @@
+{
+	"ImportPath": "github.com/seethedata/tilt-track",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
+			"Rev": "db14e161995a5177acef654cb0dd785e8ee8bc22"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v4",
+			"Comment": "v4.2.0",
+			"Rev": "a7d1d0b9ac18e46d986729d8b71ad25d6a23986b"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v4/internal",
+			"Comment": "v4.2.0",
+			"Rev": "a7d1d0b9ac18e46d986729d8b71ad25d6a23986b"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v4/internal/consistenthash",
+			"Comment": "v4.2.0",
+			"Rev": "a7d1d0b9ac18e46d986729d8b71ad25d6a23986b"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v4/internal/errors",
+			"Comment": "v4.2.0",
+			"Rev": "a7d1d0b9ac18e46d986729d8b71ad25d6a23986b"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v4/internal/hashtag",
+			"Comment": "v4.2.0",
+			"Rev": "a7d1d0b9ac18e46d986729d8b71ad25d6a23986b"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v4/internal/pool",
+			"Comment": "v4.2.0",
+			"Rev": "a7d1d0b9ac18e46d986729d8b71ad25d6a23986b"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v4/internal/proto",
+			"Comment": "v4.2.0",
+			"Rev": "a7d1d0b9ac18e46d986729d8b71ad25d6a23986b"
+		}
+	]
+}

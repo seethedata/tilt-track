@@ -1,0 +1,12 @@
+---
+# Manifest for tilt-track
+# Chris Ghiorzi
+applications:
+- name: tilt-track
+  scale: 2
+  memory: 256MB
+  buildpack: go_buildpack 
+  env:
+   GOPACKAGENAME: tilt-track
+  services:
+  - TILT_REDIS
