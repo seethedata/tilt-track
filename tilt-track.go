@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/garyburd/redigo"
 	"gopkg.in/redis.v4"
 	"log"
 	"net/http"
@@ -10,27 +11,7 @@ import (
 	"strconv"
 )
 
-type pcfDevData struct {
-	Serv []service `json:"p-redis"`
-}
-
-type pwsData struct {
-	Serv []service `json:"rediscloud"`
-}
-
-type bluemixData struct {
-	Serv []service `json:"redis-2.6"`
-}
-
-type service struct {
-	Credentials creds `json:"credentials"`
-}
-
-type creds struct {
-	Host     string `json:"host"`
-	Password string `json:"password"`
-	Port     int    `json:"port"`
-}
+var redisClient *redis.Client
 
 func check(function string, e error) {
 	if e != nil {
@@ -38,7 +19,8 @@ func check(function string, e error) {
 	}
 }
 func responseHandler(w http.ResponseWriter, r *http.Request) {
-	response := `{"Key1": "val1"}`
+	response := redisClient.Keys("{lat:*")
+	fmt.Printf("%T|%v\n", response, response)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	json.NewEncoder(w).Encode(response)
 }
@@ -56,23 +38,34 @@ func main() {
 
 	servicesJSON := os.Getenv("VCAP_SERVICES")
 	fmt.Println(servicesJSON)
-	var services pcfDevData
-	err := json.Unmarshal([]byte(servicesJSON), &services)
+	parser, err := gojq.NewStringQuery(servicesJSON)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%T: %v\n", services.Serv[0].Credentials.Host, services.Serv[0].Credentials.Host)
-	credentials := services.Serv[0].Credentials
+	serviceName := "p-redis"
+	redisHost, err := parser.Query(serviceName + ".[0].credentials.host")
+	redisPassword, err := parser.Query(serviceName + ".[0].credentials.password")
+	redisPort, err := parser.Query(serviceName + ".[0].credentials.port")
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     credentials.Host + ":" + strconv.Itoa(credentials.Port),
-		Password: credentials.Password,
+	redisClient = redis.NewClient(&redis.Options{
+		Addr:     redisHost.(string) + ":" + strconv.FormatFloat(redisPort.(float64), 'f', -1, 64),
+		Password: redisPassword.(string),
 		DB:       0,
 	})
 
-	pong, err := client.Ping().Result()
+	pong, err := redisClient.Ping().Result()
 	fmt.Println(pong, err)
+	redisClient.Del("ghiorzi1")
+	redisClient.Del("ghiorzi2")
+	err = redisClient.Set("{lat: 49, lng: -75}", "20161002150600", 0).Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = redisClient.Set("{lat: 80, lng: -95}", "20161001150600", 0).Err()
+	if err != nil {
+		log.Fatal(err)
+	}
 	http.HandleFunc("/data", responseHandler)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
