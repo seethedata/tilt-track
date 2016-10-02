@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/elgs/gojq"
 	"github.com/garyburd/redigo"
-	"gopkg.in/redis.v4"
 	"log"
 	"net/http"
 	"os"
@@ -48,11 +48,7 @@ func main() {
 	redisPassword, err := parser.Query(serviceName + ".[0].credentials.password")
 	redisPort, err := parser.Query(serviceName + ".[0].credentials.port")
 
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     redisHost.(string) + ":" + strconv.FormatFloat(redisPort.(float64), 'f', -1, 64),
-		Password: redisPassword.(string),
-		DB:       0,
-	})
+	redisClient = redis.Dial("tcp", redisHost+":"+strconv.FormatFloat())
 
 	pong, err := redisClient.Ping().Result()
 	fmt.Println(pong, err)
